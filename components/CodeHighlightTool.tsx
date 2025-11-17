@@ -1,13 +1,13 @@
 import React, { useState, useCallback } from 'react';
-import { highlightCode } from '../services/geminiService';
+import { highlightCode } from '../services/highlightService';
 
 const LANGUAGES = [
-    "JavaScript", "Python", "HTML", "CSS", "SQL", "TypeScript", "JSX", "JSON", "Markdown", "Go", "Rust", "Java", "C++"
+    "Python", "JavaScript", "HTML", "CSS", "SQL", "TypeScript", "JSX", "JSON", "Markdown", "Go", "Rust", "Java", "C++"
 ];
 
 const CodeHighlightTool: React.FC = () => {
     const [code, setCode] = useState<string>('');
-    const [language, setLanguage] = useState<string>(LANGUAGES[0]);
+    const [language, setLanguage] = useState<string>('Python');
     const [highlightedCode, setHighlightedCode] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
@@ -36,10 +36,11 @@ const CodeHighlightTool: React.FC = () => {
     const handleCopyAsText = useCallback(() => {
         if (!highlightedCode) return;
 
+        // For Highlight.js output, we need to extract text from HTML
         const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = highlightedCode.replace(/<br\s*\/?>/gi, '\n');
+        tempDiv.innerHTML = highlightedCode;
 
-        navigator.clipboard.writeText(tempDiv.innerText).then(() => {
+        navigator.clipboard.writeText(tempDiv.textContent || tempDiv.innerText || '').then(() => {
             setCopySuccess(true);
             setTimeout(() => setCopySuccess(false), 2000);
         }).catch(err => {
@@ -51,7 +52,6 @@ const CodeHighlightTool: React.FC = () => {
     const handleCopyAsHTML = useCallback(() => {
         if (!highlightedCode) return;
 
-        // 创建富文本格式,适合粘贴到Word
         const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -59,10 +59,25 @@ const CodeHighlightTool: React.FC = () => {
 <style>
     body { font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 11pt; line-height: 1.5; }
     pre { background-color: #f5f5f5; padding: 16px; border-radius: 4px; border: 1px solid #ddd; }
+    /* Highlight.js GitHub theme colors */
+    .hljs-keyword { color: #d73a49; font-weight: bold; }
+    .hljs-string { color: #032f62; }
+    .hljs-comment { color: #6a737d; font-style: italic; }
+    .hljs-number { color: #005cc5; }
+    .hljs-function { color: #6f42c1; }
+    .hljs-class { color: #6f42c1; font-weight: bold; }
+    .hljs-title { color: #6f42c1; font-weight: bold; }
+    .hljs-variable { color: #e36209; }
+    .hljs-built_in { color: #005cc5; }
+    .hljs-literal { color: #005cc5; }
+    .hljs-attr { color: #6f42c1; }
+    .hljs-tag { color: #22863a; }
+    .hljs-name { color: #22863a; font-weight: bold; }
+    .hljs-attribute { color: #6f42c1; }
 </style>
 </head>
 <body>
-<pre>${highlightedCode.replace(/<br\s*\/?>/gi, '\n')}</pre>
+<pre><code>${highlightedCode}</code></pre>
 </body>
 </html>`;
 
@@ -73,84 +88,117 @@ const CodeHighlightTool: React.FC = () => {
         });
 
         navigator.clipboard.write([clipboardItem]).then(() => {
-            alert('已复制为富文��格式,可直接粘贴到Word!');
+            alert('已复制为富文本格式,可直接粘贴到Word!');
         }).catch(err => {
             console.error('Failed to copy as HTML: ', err);
-            // 降级到普通复制
             handleCopyAsText();
         });
     }, [highlightedCode, code, handleCopyAsText]);
 
     return (
-        <div className="max-w-4xl mx-auto flex flex-col gap-8">
-            <header>
-                <h1 className="text-text-light dark:text-text-dark text-4xl font-black leading-tight tracking-[-0.033em]">代码高亮工具</h1>
-                <p className="text-subtle-light dark:text-subtle-dark text-base font-normal leading-normal mt-2">
-                    粘贴您的代码,选择语言,然后点击高亮按钮,即可获得可用于文档的格式化代码。
-                </p>
-            </header>
-
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-                <div className="relative w-full sm:w-64">
-                    <label className="sr-only" htmlFor="language-select">编程语言</label>
-                    <select
-                        id="language-select"
-                        value={language}
-                        onChange={(e) => setLanguage(e.target.value)}
-                        className="w-full appearance-none rounded-lg border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark px-4 py-2.5 text-text-light dark:text-text-dark focus:border-primary focus:ring-primary/20 focus:ring-2"
-                    >
-                        {LANGUAGES.map(lang => <option key={lang} value={lang}>{lang}</option>)}
-                    </select>
-                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-subtle-light dark:text-subtle-dark pointer-events-none">expand_more</span>
-                </div>
-                <button
-                    onClick={handleHighlight}
-                    disabled={isLoading}
-                    className="flex w-full sm:w-auto items-center justify-center gap-2 px-6 py-2.5 bg-primary text-white rounded-lg font-medium shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {isLoading ? <div className="spinner"></div> : <span className="material-symbols-outlined text-xl">format_paint</span>}
-                    <span>{isLoading ? "高亮中..." : "高亮代码"}</span>
-                </button>
+        <div className="flex w-full flex-col items-center px-4 py-10 sm:px-6 lg:px-8">
+            <div className="flex w-full max-w-6xl flex-col items-center gap-2 text-center mb-8">
+                <p className="text-3xl font-black leading-tight tracking-tighter text-gray-900 dark:text-white sm:text-4xl">代码高亮工具</p>
+                <p className="text-base font-normal text-gray-500 dark:text-gray-400">粘贴您的代码,选择语言,然后点击高亮按钮,即可获得可用于文档的格式化代码。</p>
             </div>
 
-            {error && <p className="text-red-500 bg-red-100 dark:bg-red-900/50 p-3 rounded-lg">{error}</p>}
+            <div className="w-full max-w-6xl mb-6">
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <div className="relative w-full sm:w-64">
+                        <label className="sr-only" htmlFor="language-select">编程语言</label>
+                        <select
+                            id="language-select"
+                            value={language}
+                            onChange={(e) => setLanguage(e.target.value)}
+                            className="w-full appearance-none rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2.5 text-gray-900 dark:text-gray-100 focus:border-primary focus:ring-primary/20 focus:ring-2"
+                        >
+                            {LANGUAGES.map(lang => <option key={lang} value={lang}>{lang}</option>)}
+                        </select>
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none">expand_more</span>
+                    </div>
+                    <button
+                        onClick={handleHighlight}
+                        disabled={isLoading || !code}
+                        className="flex w-full sm:w-auto items-center justify-center gap-2 px-6 py-2.5 bg-primary text-white rounded-lg font-medium shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isLoading ? <div className="spinner"></div> : <span className="material-symbols-outlined text-xl">format_paint</span>}
+                        <span>{isLoading ? "高亮中..." : "高亮代码"}</span>
+                    </button>
+                </div>
+            </div>
 
-            <div className="grid grid-cols-1 gap-8">
-                <div>
-                    <label className="flex flex-col">
-                        <p className="text-text-light dark:text-text-dark text-base font-medium leading-normal pb-2">您的代码</p>
+            {error && <div className="w-full max-w-6xl mb-4"><p className="text-red-500 bg-red-100 dark:bg-red-900/50 p-3 rounded-lg">{error}</p></div>}
+
+            <div className="w-full max-w-6xl rounded-xl border border-gray-200 dark:border-gray-700/50 bg-white dark:bg-gray-800/20 shadow-sm">
+                <div className="grid grid-cols-1 lg:grid-cols-2">
+                    {/* 左侧：原始代码 */}
+                    <div className="relative flex flex-col p-4 border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-700/50">
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-gray-900 dark:text-white text-base font-semibold leading-normal flex items-center gap-2">
+                                <span className="material-symbols-outlined text-xl">code</span>
+                                原始代码
+                            </h3>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">{code.length} 字符</span>
+                        </div>
                         <textarea
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
-                            className="form-input flex w-full min-w-0 flex-1 resize-y rounded-lg text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark focus:border-primary min-h-64 placeholder:text-subtle-light dark:placeholder:text-subtle-dark p-[15px] text-base font-mono leading-normal"
+                            className="flex-1 resize-none rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-gray-100 focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[400px] placeholder:text-gray-400 dark:placeholder:text-gray-500 p-4 text-sm font-mono leading-relaxed"
                             placeholder="在此处粘贴您的代码..."
                         ></textarea>
-                    </label>
-                </div>
-                <div>
-                    <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-text-light dark:text-text-dark text-base font-medium leading-normal">高亮后的代码</h3>
-                        <div className="flex gap-2">
-                            <button
-                                onClick={handleCopyAsText}
-                                disabled={!highlightedCode}
-                                className="flex items-center gap-2 px-4 py-2 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-lg text-sm font-medium hover:bg-border-light dark:hover:bg-border-dark disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <span className="material-symbols-outlined text-lg">content_copy</span>
-                                <span>{copySuccess ? "已复制!" : "复制文本"}</span>
-                            </button>
-                            <button
-                                onClick={handleCopyAsHTML}
-                                disabled={!highlightedCode}
-                                className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <span className="material-symbols-outlined text-lg">description</span>
-                                <span>复制到Word</span>
-                            </button>
+                    </div>
+
+                    {/* 右侧：高亮后的代码 */}
+                    <div className="relative flex flex-col p-4 bg-gray-50/50 dark:bg-gray-800/30">
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-gray-900 dark:text-white text-base font-semibold leading-normal flex items-center gap-2">
+                                <span className="material-symbols-outlined text-xl">auto_awesome</span>
+                                高亮后的代码
+                            </h3>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleCopyAsText}
+                                    disabled={!highlightedCode}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    <span className="material-symbols-outlined text-base">content_copy</span>
+                                    <span>{copySuccess ? "已复制!" : "复制文本"}</span>
+                                </button>
+                                <button
+                                    onClick={handleCopyAsHTML}
+                                    disabled={!highlightedCode}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-xs font-medium hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    <span className="material-symbols-outlined text-base">description</span>
+                                    <span>复制到Word</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div className="relative bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 min-h-[400px] p-4 font-mono text-sm overflow-x-auto">
+                            {highlightedCode ? (
+                                <pre className="leading-relaxed"><code dangerouslySetInnerHTML={{ __html: highlightedCode }}></code></pre>
+                            ) : (
+                                <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500">
+                                    <div className="text-center">
+                                        <span className="material-symbols-outlined text-5xl mb-2 block opacity-50">lightbulb</span>
+                                        <p className="text-sm">高亮后的代码将显示在此处</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
-                    <div className="relative bg-surface-light dark:bg-surface-dark rounded-lg border border-border-light dark:border-border-dark min-h-64 p-4 font-mono text-sm overflow-x-auto">
-                        <pre><code dangerouslySetInnerHTML={{ __html: highlightedCode || '<span class="text-subtle-light dark:text-subtle-dark">高亮后的代码将显示在此处。</span>' }}></code></pre>
+                </div>
+            </div>
+
+            {/* 使用提示 */}
+            <div className="w-full max-w-6xl mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-xl">info</span>
+                    <div className="flex-1">
+                        <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-1">使用提示</h4>
+                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                            选择正确的编程语言可以获得更准确的高亮效果。点击"复制到Word"按钮可以直接粘贴到Word文档中,保持代码格式和颜色。
+                        </p>
                     </div>
                 </div>
             </div>

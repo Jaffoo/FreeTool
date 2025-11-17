@@ -21,16 +21,16 @@ const TOOLS: Tool[] = [
         component: TranslateTool,
     },
     {
-        id: 'image-converter',
-        name: '图片格式转换',
-        icon: 'image',
-        component: ImageConverterTool,
-    },
-    {
         id: 'code-highlight',
         name: '代码高亮',
         icon: 'code',
         component: CodeHighlightTool,
+    },
+    {
+        id: 'image-converter',
+        name: '图片格式转换',
+        icon: 'image',
+        component: ImageConverterTool,
     },
     {
         id: 'text-formatter',
