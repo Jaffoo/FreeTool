@@ -103,8 +103,6 @@ button, a {
     border-radius: 9999px;
     background: transparent;
     color: #64748b;
-    border: none;
-    cursor: pointer;
 }
 
 .btn-icon:hover:not(:disabled) {
@@ -117,11 +115,6 @@ button, a {
 
 .dark .btn-icon:hover:not(:disabled) {
     background-color: rgba(51, 65, 85, 0.5);
-}
-
-.btn-icon:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }
 
 /* Language selector button */
@@ -196,11 +189,6 @@ button, a {
     border: none;
     background: transparent;
     transition: all 0.2s ease-in-out;
-    color: #374151;
-}
-
-.dark .lang-option {
-    color: #d1d5db;
 }
 
 .lang-option:hover {
@@ -260,4 +248,23 @@ button, a {
 .text-area:focus {
     outline: none;
     ring: 0;
+}
+
+/* Divider */
+.divider-vertical {
+    width: 1px;
+    background-color: #e2e8f0;
+}
+
+.dark .divider-vertical {
+    background-color: rgba(51, 65, 85, 0.5);
+}
+
+.divider-horizontal {
+    height: 1px;
+    background-color: #e2e8f0;
+}
+
+.dark .divider-horizontal {
+    background-color: rgba(51, 65, 85, 0.5);
 }

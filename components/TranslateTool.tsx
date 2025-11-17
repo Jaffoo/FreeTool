@@ -67,7 +67,7 @@ const TranslateTool: React.FC = () => {
         if (inputText.trim()) {
             translateTimeoutRef.current = setTimeout(() => {
                 performTranslate(inputText, sourceLang, targetLang);
-            }, 500); // 500ms 防抖
+            }, 500);
         } else {
             setTranslatedText('');
             setDetectedLangName('');
@@ -91,29 +91,6 @@ const TranslateTool: React.FC = () => {
         });
     }, [translatedText]);
 
-    const handleSwap = useCallback(() => {
-        if (sourceLang === 'auto') {
-            alert('自动检测模式无法互换语言');
-            return;
-        }
-
-        if (!translatedText) {
-            alert('请先翻译文本后再互换');
-            return;
-        }
-
-        // 互换文本和语言
-        const newInputText = translatedText;
-        const newSourceLang = targetLang;
-        const newTargetLang = sourceLang;
-
-        setInputText(newInputText);
-        setSourceLang(newSourceLang);
-        setTargetLang(newTargetLang);
-        setTranslatedText('');
-        setDetectedLangName('');
-    }, [translatedText, sourceLang, targetLang]);
-
     const handleClear = useCallback(() => {
         setInputText('');
         setTranslatedText('');
@@ -124,7 +101,6 @@ const TranslateTool: React.FC = () => {
     const handleSourceLangChange = useCallback((newLang: Language) => {
         setSourceLang(newLang);
         setShowSourceDropdown(false);
-        // 语言改变后重新翻译
         if (inputText.trim()) {
             performTranslate(inputText, newLang, targetLang);
         }
@@ -133,7 +109,6 @@ const TranslateTool: React.FC = () => {
     const handleTargetLangChange = useCallback((newLang: Language) => {
         setTargetLang(newLang);
         setShowTargetDropdown(false);
-        // 语言改变后重新翻译
         if (inputText.trim()) {
             performTranslate(inputText, sourceLang, newLang);
         }
@@ -164,75 +139,69 @@ const TranslateTool: React.FC = () => {
             )}
 
             <div className="w-full max-w-5xl rounded-xl border border-gray-200 dark:border-gray-700/50 bg-white dark:bg-gray-800/20 shadow-sm">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-b border-gray-200 dark:border-gray-700/50 p-3">
-                    <div className="flex w-full items-center gap-2">
-                        {/* 源语言选择 */}
-                        <div className="flex-1 relative">
-                            <button
-                                onClick={() => {
-                                    setShowSourceDropdown(!showSourceDropdown);
-                                    setShowTargetDropdown(false);
-                                }}
-                                className="w-full rounded-lg px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-primary/50 flex items-center justify-between"
-                            >
-                                <span>{getSourceLangDisplay()}</span>
-                                <span className="material-symbols-outlined text-base">expand_more</span>
-                            </button>
-                            {showSourceDropdown && (
-                                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
-                                    {LANGUAGES.map(lang => (
-                                        <button
-                                            key={lang.code}
-                                            onClick={() => handleSourceLangChange(lang.code)}
-                                            className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                                                sourceLang === lang.code ? 'bg-primary/10 text-primary' : 'text-gray-700 dark:text-gray-300'
-                                            }`}
-                                        >
-                                            {lang.name}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* 互换按钮 */}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 border-b border-gray-200 dark:border-gray-700/50 p-3">
+                    {/* 源语言选择 */}
+                    <div className="w-full sm:w-auto sm:min-w-[200px] relative">
                         <button
-                            onClick={handleSwap}
-                            disabled={!translatedText || sourceLang === 'auto'}
-                            className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title={sourceLang === 'auto' ? '自动检测模式无法互换' : '互换语言'}
+                            onClick={() => {
+                                setShowSourceDropdown(!showSourceDropdown);
+                                setShowTargetDropdown(false);
+                            }}
+                            className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
                         >
-                            <span className="material-symbols-outlined text-xl">swap_horiz</span>
+                            <span>{getSourceLangDisplay()}</span>
+                            <span className="material-symbols-outlined text-base">expand_more</span>
                         </button>
+                        {showSourceDropdown && (
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                                {LANGUAGES.map(lang => (
+                                    <button
+                                        key={lang.code}
+                                        onClick={() => handleSourceLangChange(lang.code)}
+                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                                            sourceLang === lang.code
+                                                ? 'bg-primary/10 text-primary'
+                                                : 'text-gray-700 dark:text-gray-300'
+                                        }`}
+                                    >
+                                        {lang.name}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
-                        {/* 目标语言选择 */}
-                        <div className="flex-1 relative">
-                            <button
-                                onClick={() => {
-                                    setShowTargetDropdown(!showTargetDropdown);
-                                    setShowSourceDropdown(false);
-                                }}
-                                className="w-full rounded-lg px-4 py-2.5 text-sm font-medium text-primary bg-primary/10 dark:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/50 flex items-center justify-between"
-                            >
-                                <span>{getTargetLangDisplay()}</span>
-                                <span className="material-symbols-outlined text-base">expand_more</span>
-                            </button>
-                            {showTargetDropdown && (
-                                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
-                                    {TARGET_LANGUAGES.map(lang => (
-                                        <button
-                                            key={lang.code}
-                                            onClick={() => handleTargetLangChange(lang.code)}
-                                            className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                                                targetLang === lang.code ? 'bg-primary/10 text-primary' : 'text-gray-700 dark:text-gray-300'
-                                            }`}
-                                        >
-                                            {lang.name}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                    <span className="material-symbols-outlined text-2xl text-gray-400 dark:text-gray-500 hidden sm:block">arrow_forward</span>
+
+                    {/* 目标语言选择 */}
+                    <div className="w-full sm:w-auto sm:min-w-[200px] relative">
+                        <button
+                            onClick={() => {
+                                setShowTargetDropdown(!showTargetDropdown);
+                                setShowSourceDropdown(false);
+                            }}
+                            className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium text-primary bg-primary/10 dark:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        >
+                            <span>{getTargetLangDisplay()}</span>
+                            <span className="material-symbols-outlined text-base">expand_more</span>
+                        </button>
+                        {showTargetDropdown && (
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                                {TARGET_LANGUAGES.map(lang => (
+                                    <button
+                                        key={lang.code}
+                                        onClick={() => handleTargetLangChange(lang.code)}
+                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                                            targetLang === lang.code
+                                                ? 'bg-primary/10 text-primary'
+                                                : 'text-gray-700 dark:text-gray-300'
+                                        }`}
+                                    >
+                                        {lang.name}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -241,7 +210,7 @@ const TranslateTool: React.FC = () => {
                         <textarea
                             value={inputText}
                             onChange={(e) => setInputText(e.target.value)}
-                            className="form-textarea flex-1 resize-none border-0 bg-transparent p-2 text-base font-normal text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-0"
+                            className="flex-1 resize-none border-0 bg-transparent p-2 text-base font-normal text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-0"
                             placeholder="输入文本..."
                             rows={8}
                         ></textarea>
@@ -253,7 +222,7 @@ const TranslateTool: React.FC = () => {
                             <button
                                 onClick={handleClear}
                                 disabled={!inputText}
-                                className="rounded-full p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <span className="material-symbols-outlined text-base">close</span>
                             </button>
@@ -268,7 +237,7 @@ const TranslateTool: React.FC = () => {
                             <button
                                 onClick={handleCopy}
                                 disabled={!translatedText}
-                                className="rounded-full p-2 text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="p-2 rounded-full text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <span className="material-symbols-outlined text-base">content_copy</span>
                             </button>
