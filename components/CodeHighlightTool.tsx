@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { highlightCode } from '../services/highlightService';
 
 const LANGUAGES = [
@@ -15,17 +15,20 @@ const CodeHighlightTool: React.FC = () => {
     const [copyHtmlSuccess, setCopyHtmlSuccess] = useState<boolean>(false);
     const [isNotificationFadingOut, setIsNotificationFadingOut] = useState<boolean>(false);
 
-    const handleHighlight = useCallback(async () => {
-        if (!code) {
-            setError("请输入需要高亮的代码。");
+    const highlightTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // 自动高亮函数
+    const performHighlight = useCallback(async (codeText: string, lang: string) => {
+        if (!codeText.trim()) {
+            setHighlightedCode('');
             return;
         }
+
         setIsLoading(true);
         setError(null);
-        setHighlightedCode('');
 
         try {
-            const result = await highlightCode(code, language);
+            const result = await highlightCode(codeText, lang);
             setHighlightedCode(result);
         } catch (err) {
             console.error(err);
@@ -33,7 +36,29 @@ const CodeHighlightTool: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [code, language]);
+    }, []);
+
+    // 输入代码或语言变化时,延迟高亮
+    useEffect(() => {
+        if (highlightTimeoutRef.current) {
+            clearTimeout(highlightTimeoutRef.current);
+        }
+
+        if (code.trim()) {
+            highlightTimeoutRef.current = setTimeout(() => {
+                performHighlight(code, language);
+            }, 500);
+        } else {
+            setHighlightedCode('');
+            setError(null);
+        }
+
+        return () => {
+            if (highlightTimeoutRef.current) {
+                clearTimeout(highlightTimeoutRef.current);
+            }
+        };
+    }, [code, language, performHighlight]);
 
     const handleCopyAsText = useCallback(() => {
         if (!highlightedCode) return;
@@ -144,7 +169,7 @@ const CodeHighlightTool: React.FC = () => {
         <div className="flex w-full flex-col items-center px-4 py-10 sm:px-6 lg:px-8">
             <div className="flex w-full max-w-6xl flex-col items-center gap-2 text-center mb-8">
                 <p className="text-3xl font-black leading-tight tracking-tighter text-gray-900 dark:text-white sm:text-4xl">代码高亮工具</p>
-                <p className="text-base font-normal text-gray-500 dark:text-gray-400">粘贴您的代码,选择语言,然后点击高亮按钮,即可获得可用于文档的格式化代码。</p>
+                <p className="text-base font-normal text-gray-500 dark:text-gray-400">粘贴您的代码并选择语言,自动获得可用于文档的格式化代码。</p>
             </div>
 
             <div className="w-full max-w-6xl mb-6">
@@ -161,14 +186,12 @@ const CodeHighlightTool: React.FC = () => {
                         </select>
                         <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none">expand_more</span>
                     </div>
-                    <button
-                        onClick={handleHighlight}
-                        disabled={isLoading || !code}
-                        className="flex w-full sm:w-auto items-center justify-center gap-2 px-6 py-2.5 bg-primary text-white rounded-lg font-medium shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isLoading ? <div className="spinner"></div> : <span className="material-symbols-outlined text-xl">format_paint</span>}
-                        <span>{isLoading ? "高亮中..." : "高亮代码"}</span>
-                    </button>
+                    {isLoading && (
+                        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                            <div className="spinner"></div>
+                            <span>高亮中...</span>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -202,7 +225,10 @@ const CodeHighlightTool: React.FC = () => {
                                 <span className="material-symbols-outlined text-xl">code</span>
                                 原始代码
                             </h3>
-                            <span className="text-xs text-gray-400 dark:text-gray-500">{code.length} 字符</span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                                {code.length} 字符
+                                {isLoading && <span className="ml-2">· 高亮中...</span>}
+                            </span>
                         </div>
                         <textarea
                             value={code}
