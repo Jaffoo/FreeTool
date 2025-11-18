@@ -181,6 +181,8 @@ const FORMULA_TEMPLATES = [
     { name: '柯西不等式', latex: '\\left(\\sum_{i=1}^n a_i b_i\\right)^2 \\leq \\left(\\sum_{i=1}^n a_i^2\\right) \\left(\\sum_{i=1}^n b_i^2\\right)', category: '代数' },
 ];
 
+type LatexWrapperType = 'none' | '$$' | '$' | 'equation';
+
 const MathFormulaEditor: React.FC = () => {
     const [latexInput, setLatexInput] = useState<string>('');
     const [renderedHtml, setRenderedHtml] = useState<string>('');
@@ -192,6 +194,7 @@ const MathFormulaEditor: React.FC = () => {
     const [notificationMessage, setNotificationMessage] = useState<string>('');
     const [activeTab, setActiveTab] = useState<'symbols' | 'templates'>('symbols');
     const [activeCategory, setActiveCategory] = useState<string>('基本运算');
+    const [latexWrapper, setLatexWrapper] = useState<LatexWrapperType>('none');
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const renderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -269,10 +272,30 @@ const MathFormulaEditor: React.FC = () => {
 
     const handleCopyLatex = useCallback(() => {
         if (!latexInput) return;
-        navigator.clipboard.writeText(latexInput).then(() => {
+
+        let textToCopy = latexInput;
+
+        // 根据选择的包裹方式处理 LaTeX 代码
+        switch (latexWrapper) {
+            case '$$':
+                textToCopy = `$$${latexInput}$$`;
+                break;
+            case '$':
+                textToCopy = `$${latexInput}$`;
+                break;
+            case 'equation':
+                textToCopy = `\\begin{equation}\n${latexInput}\n\\end{equation}`;
+                break;
+            case 'none':
+            default:
+                textToCopy = latexInput;
+                break;
+        }
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
             showNotification('已复制 LaTeX 格式到剪贴板!');
         }).catch(err => console.error('Failed to copy LaTeX: ', err));
-    }, [latexInput, showNotification]);
+    }, [latexInput, latexWrapper, showNotification]);
 
     const handleCopyForWord = useCallback(async () => {
         if (!mathmlOutput) return;
@@ -492,14 +515,26 @@ const MathFormulaEditor: React.FC = () => {
 
                 {/* 复制按钮区域 */}
                 <div className="bg-white dark:bg-gray-800 rounded-b-xl border-x border-b border-gray-200 dark:border-gray-700 p-3 flex flex-wrap items-center gap-2">
-                    <button
-                        onClick={handleCopyLatex}
-                        disabled={!latexInput}
-                        className="flex items-center gap-1 px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded text-sm font-medium hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <span className="material-symbols-outlined text-base">content_copy</span>
-                        复制 LaTeX 代码
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <select
+                            value={latexWrapper}
+                            onChange={(e) => setLatexWrapper(e.target.value as LatexWrapperType)}
+                            className="text-xs px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        >
+                            <option value="none">无包裹</option>
+                            <option value="$$">$$ 包裹</option>
+                            <option value="$">$ 包裹</option>
+                            <option value="equation">\begin{'{'}equation{'}'} 包裹</option>
+                        </select>
+                        <button
+                            onClick={handleCopyLatex}
+                            disabled={!latexInput}
+                            className="flex items-center gap-1 px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded text-sm font-medium hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <span className="material-symbols-outlined text-base">content_copy</span>
+                            复制 LaTeX 代码
+                        </button>
+                    </div>
                     <button
                         onClick={handleCopyForWord}
                         disabled={!mathmlOutput}
