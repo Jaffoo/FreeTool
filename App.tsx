@@ -3,9 +3,10 @@ import TranslateTool from './components/TranslateTool';
 import ImageConverterTool from './components/ImageConverterTool';
 import CodeHighlightTool from './components/CodeHighlightTool';
 import TextFormatterTool from './components/TextFormatterTool';
+import JsonFormatterTool from './components/JsonFormatterTool';
 import MathFormulaEditor from './components/MathFormulaEditor';
 
-type ToolType = 'translate' | 'image-converter' | 'code-highlight' | 'text-formatter' | 'math-formula';
+type ToolType = 'translate' | 'image-converter' | 'code-highlight' | 'text-formatter' | 'json-formatter' | 'math-formula';
 
 interface Tool {
     id: ToolType;
@@ -32,6 +33,12 @@ const TOOLS: Tool[] = [
         name: '文本格式化',
         icon: 'description',
         component: TextFormatterTool,
+    },
+    {
+        id: 'json-formatter',
+        name: 'JSON 格式化',
+        icon: 'data_object',
+        component: JsonFormatterTool,
     },
     {
         id: 'math-formula',
