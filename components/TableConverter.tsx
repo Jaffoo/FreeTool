@@ -1,5 +1,39 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
+declare global {
+    interface Window {
+        DataGridXL?: any;
+    }
+}
+
+type DataGridXLInstance = {
+    getData?: () => any;
+    destroy?: () => void;
+    events: { on: (name: string, fn: (ev?: any) => void) => void };
+};
+
+function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout | undefined;
+  return (...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => fn(...args), delay);
+  };
+}
+
+const loadDataGridXLScript = () =>
+    new Promise<void>((resolve, reject) => {
+        if (window.DataGridXL) {
+            resolve();
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://code.datagridxl.com/datagridxl.js';
+        script.async = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('load_failed'));
+        document.head.appendChild(script);
+    });
+
 type TableFormat = 'markdown' | 'latex' | 'word';
 
 const createEmptyTable = (rows: number, cols: number) =>
@@ -70,6 +104,7 @@ const TableConverter: React.FC = () => {
             setGridStatus('loading');
 
             try {
+                await loadDataGridXLScript();
                 await waitForDataGridXL();
             } catch {
                 if (!disposed) {
@@ -80,7 +115,9 @@ const TableConverter: React.FC = () => {
 
             if (disposed || !gridContainerRef.current || !window.DataGridXL) return;
 
-            const grid = new window.DataGridXL(gridContainerRef.current, {
+            const container = gridContainerRef.current;
+            if (!container.id) container.id = 'dgxl-table-grid';
+            const grid = new window.DataGridXL(container.id, {
                 data: latestDataRef.current.map(row => [...row]),
                 colHeaderLabelType: 'letters',
                 rowHeaderLabelType: 'numbers',
@@ -124,9 +161,13 @@ const TableConverter: React.FC = () => {
                 });
             };
 
-            grid.events.on('$setcellvaluesbatch', syncFromGrid);
-            grid.events.on('$fillcells', syncFromGrid);
-            grid.events.on('$clearcells', syncFromGrid);
+            const debouncedSync = debounce(syncFromGrid, 300);
+            grid.events.on('$setcellvaluesbatch', debouncedSync);
+            grid.events.on('$fillcells', debouncedSync);
+            grid.events.on('$clearcells', debouncedSync);
+            grid.events.on('ready', syncFromGrid);
+            grid.events.on('cellvaluechange', debouncedSync);
+            grid.events.on('documentchange', debouncedSync);
         };
 
         mountGrid();
