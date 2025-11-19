@@ -25,7 +25,6 @@ const ImageEditorTool: React.FC = () => {
     // 绘制相关状态
     const [isDrawing, setIsDrawing] = useState<boolean>(false);
     const [drawStart, setDrawStart] = useState<Point | null>(null);
-    const [drawHistory, setDrawHistory] = useState<ImageData[]>([]);
 
     // 分辨率修改
     const [targetWidth, setTargetWidth] = useState<number>(0);
@@ -36,6 +35,8 @@ const ImageEditorTool: React.FC = () => {
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imageRef = useRef<HTMLImageElement | null>(null);
+    const historyRef = useRef<HTMLCanvasElement[]>([]);
+    const tempCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
     // 处理文件选择
     const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,7 +64,7 @@ const ImageEditorTool: React.FC = () => {
                     const ctx = canvas.getContext('2d');
                     if (ctx) {
                         ctx.drawImage(img, 0, 0);
-                        saveHistory(ctx);
+                        saveHistory();
                     }
                 }
             };
@@ -72,26 +73,44 @@ const ImageEditorTool: React.FC = () => {
         reader.readAsDataURL(file);
     }, []);
 
-    // 保存历史记录
-    const saveHistory = (ctx: CanvasRenderingContext2D) => {
-        const imageData = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
-        setDrawHistory(prev => [...prev, imageData]);
+    // 保存历史记录 - 改用canvas克隆而不是ImageData
+    const saveHistory = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const historyCanvas = document.createElement('canvas');
+        historyCanvas.width = canvas.width;
+        historyCanvas.height = canvas.height;
+        const historyCtx = historyCanvas.getContext('2d');
+        if (historyCtx) {
+            historyCtx.drawImage(canvas, 0, 0);
+            historyRef.current = [...historyRef.current, historyCanvas];
+
+            // 限制历史记录数量，避免内存溢出
+            if (historyRef.current.length > 20) {
+                historyRef.current.shift();
+            }
+        }
+    };
+
+    // 恢复历史状态
+    const restoreFromHistory = () => {
+        const canvas = canvasRef.current;
+        if (!canvas || historyRef.current.length === 0) return;
+
+        const lastHistory = historyRef.current[historyRef.current.length - 1];
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(lastHistory, 0, 0);
     };
 
     // 撤销
     const handleUndo = () => {
-        if (drawHistory.length > 1) {
-            const canvas = canvasRef.current;
-            if (!canvas) return;
-
-            const ctx = canvas.getContext('2d');
-            if (!ctx) return;
-
-            const newHistory = [...drawHistory];
-            newHistory.pop();
-            const lastState = newHistory[newHistory.length - 1];
-            ctx.putImageData(lastState, 0, 0);
-            setDrawHistory(newHistory);
+        if (historyRef.current.length > 1) {
+            historyRef.current.pop();
+            restoreFromHistory();
         }
     };
 
@@ -137,10 +156,7 @@ const ImageEditorTool: React.FC = () => {
             setCropEnd(point);
 
             // 绘制裁剪框预览
-            if (drawHistory.length > 0) {
-                const lastState = drawHistory[drawHistory.length - 1];
-                ctx.putImageData(lastState, 0, 0);
-            }
+            restoreFromHistory();
 
             ctx.strokeStyle = '#00FF00';
             ctx.lineWidth = 2;
@@ -169,10 +185,7 @@ const ImageEditorTool: React.FC = () => {
                     setDrawStart(point);
                 } else {
                     // 其他绘图模式需要先恢复上一状态
-                    if (drawHistory.length > 0) {
-                        const lastState = drawHistory[drawHistory.length - 1];
-                        ctx.putImageData(lastState, 0, 0);
-                    }
+                    restoreFromHistory();
 
                     ctx.strokeStyle = drawColor;
                     ctx.lineWidth = lineWidth;
@@ -253,14 +266,17 @@ const ImageEditorTool: React.FC = () => {
                 setTargetHeight(height);
                 setOriginalWidth(width);
                 setOriginalHeight(height);
-                setDrawHistory([ctx.getImageData(0, 0, width, height)]);
+
+                // 重置历史记录
+                historyRef.current = [];
+                saveHistory();
             }
 
             setIsCropping(false);
             setCropStart(null);
             setCropEnd(null);
         } else if (isDrawing) {
-            saveHistory(ctx);
+            saveHistory();
             setIsDrawing(false);
             setDrawStart(null);
         }
@@ -287,7 +303,10 @@ const ImageEditorTool: React.FC = () => {
 
         setOriginalWidth(targetWidth);
         setOriginalHeight(targetHeight);
-        saveHistory(ctx);
+
+        // 重置历史记录
+        historyRef.current = [];
+        saveHistory();
     };
 
     // 宽度变化处理
@@ -363,7 +382,7 @@ const ImageEditorTool: React.FC = () => {
                         </label>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6">
+                    <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6 items-start">
                         {/* 左侧：编辑区域 */}
                         <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-background-dark p-6 shadow-sm flex flex-col gap-4">
                             <div className="flex items-center justify-between">
@@ -373,7 +392,7 @@ const ImageEditorTool: React.FC = () => {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={handleUndo}
-                                        disabled={drawHistory.length <= 1}
+                                        disabled={historyRef.current.length <= 1}
                                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <span className="material-symbols-outlined text-base">undo</span>
@@ -383,7 +402,7 @@ const ImageEditorTool: React.FC = () => {
                                         onClick={() => {
                                             setImageSrc('');
                                             setSelectedFile(null);
-                                            setDrawHistory([]);
+                                            historyRef.current = [];
                                         }}
                                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
                                     >
@@ -411,7 +430,8 @@ const ImageEditorTool: React.FC = () => {
                         </div>
 
                         {/* 右侧：工具栏 */}
-                        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-background-dark p-6 shadow-sm flex flex-col gap-6">
+                        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-background-dark p-6 shadow-sm">
+                            <div className="flex flex-col gap-6 min-h-[680px]">
                             <div>
                                 <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
                                     工具
@@ -574,6 +594,7 @@ const ImageEditorTool: React.FC = () => {
                                 <span className="material-symbols-outlined text-base">download</span>
                                 导出图片
                             </button>
+                            </div>
                         </div>
                     </div>
                 )}
