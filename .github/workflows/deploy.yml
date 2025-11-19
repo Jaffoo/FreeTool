@@ -9,6 +9,9 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout 代码
         uses: actions/checkout@v4
@@ -31,6 +34,7 @@ jobs:
         run: |
           rm -rf docs
           cp -r dist docs
+          touch docs/.nojekyll
 
       - name: 提交到仓库
         run: |
