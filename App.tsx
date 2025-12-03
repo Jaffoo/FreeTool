@@ -6,6 +6,7 @@ import ImageComparisonTool from './components/ImageComparisonTool';
 import CodeHighlightTool from './components/CodeHighlightTool';
 import TextFormatterTool from './components/TextFormatterTool';
 import JsonFormatterTool from './components/JsonFormatterTool';
+import XmlFormatterTool from './components/XmlFormatterTool';
 import MathFormulaEditor from './components/MathFormulaEditor';
 import TableConverter from './components/TableConverter';
 import VideoAspectConverter from './components/VideoAspectConverter';
@@ -25,6 +26,7 @@ type ToolType =
     | 'code-highlight'
     | 'text-formatter'
     | 'json-formatter'
+    | 'xml-formatter'
     | 'math-formula'
     | 'table-converter'
     | 'video-aspect-converter';
@@ -60,6 +62,12 @@ const TOOLS: Tool[] = [
         name: 'JSON 格式化',
         icon: 'data_object',
         component: JsonFormatterTool,
+    },
+    {
+        id: 'xml-formatter',
+        name: 'XML 格式化',
+        icon: 'code',
+        component: XmlFormatterTool,
     },
     {
         id: 'math-formula',
