@@ -12,6 +12,7 @@ import MathFormulaEditor from './components/MathFormulaEditor';
 import TableConverter from './components/TableConverter';
 import VideoAspectConverter from './components/VideoAspectConverter';
 import TextDiffTool from './components/TextDiffTool';
+import PdfToPptTool from './components/PdfToPptTool';
 import BottomNavBar from './components/BottomNavBar';
 
 // 获取资源路径的辅助函数
@@ -33,7 +34,8 @@ type ToolType =
     | 'math-formula'
     | 'table-converter'
     | 'video-aspect-converter'
-    | 'text-diff';
+    | 'text-diff'
+    | 'pdf-to-ppt';
 
 interface Tool {
     id: ToolType;
@@ -120,6 +122,12 @@ const TOOLS: Tool[] = [
         name: '文本差异对比',
         icon: 'compare',
         component: TextDiffTool,
+    },
+    {
+        id: 'pdf-to-ppt',
+        name: 'PDF转PPT',
+        icon: 'slideshow',
+        component: PdfToPptTool,
     },
 ];
 

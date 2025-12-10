@@ -13,7 +13,8 @@ type ToolType =
     | 'math-formula'
     | 'table-converter'
     | 'video-aspect-converter'
-    | 'text-diff';
+    | 'text-diff'
+    | 'pdf-to-ppt';
 
 interface Tool {
     id: ToolType;
@@ -71,6 +72,11 @@ const TOOLS: Tool[] = [
         id: 'table-converter',
         name: '表格',
         icon: 'table_chart',
+    },
+    {
+        id: 'pdf-to-ppt',
+        name: 'PDF',
+        icon: 'slideshow',
     },
 ];
 
