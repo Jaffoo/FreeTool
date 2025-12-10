@@ -27,11 +27,11 @@ interface AspectRatio {
 }
 
 const ASPECT_RATIOS: AspectRatio[] = [
-    { id: 'square', name: 'Square', ratio: 1 / 1 },
-    { id: 'portrait', name: 'Portrait', ratio: 3 / 4 },
-    { id: 'post', name: 'Post', ratio: 4 / 3 },
-    { id: 'story', name: 'Story', ratio: 9 / 16 },
-    { id: 'wide', name: 'Wide', ratio: 16 / 9 },
+    { id: 'square', name: '正方形', ratio: 1 / 1 },
+    { id: 'portrait', name: '竖版', ratio: 3 / 4 },
+    { id: 'post', name: '横版', ratio: 4 / 3 },
+    { id: 'story', name: '故事', ratio: 9 / 16 },
+    { id: 'wide', name: '宽屏', ratio: 16 / 9 },
 ];
 
 // 生成布局的辅助函数
@@ -449,12 +449,11 @@ const PhotoCollageTool: React.FC = () => {
                                         下载拼接图
                                     </button>
                                 </div>
-                                <div className="flex justify-center">
+                                <div className="flex justify-center h-[450px]">
                                     <img
                                         src={previewUrl}
                                         alt="拼接预览"
-                                        className="max-w-full rounded-lg shadow-lg border border-gray-200 dark:border-gray-700"
-                                        style={{ maxHeight: '600px' }}
+                                        className="max-w-full max-h-full object-contain rounded-lg shadow-lg border border-gray-200 dark:border-gray-700"
                                     />
                                 </div>
                             </div>
@@ -477,49 +476,104 @@ const PhotoCollageTool: React.FC = () => {
                         {/* 当前模板信息 */}
                         {currentTemplate && (
                             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                                <div className="flex flex-col gap-1 text-blue-700 dark:text-blue-300">
+                                <div className="flex items-center justify-between text-blue-700 dark:text-blue-300">
                                     <div className="flex items-center gap-2">
                                         <span className="material-symbols-outlined text-lg">info</span>
                                         <span className="text-xs font-medium">当前配置</span>
                                     </div>
-                                    <div className="text-xs ml-6">
-                                        {currentTemplate.name} ({currentTemplate.slots}张)
-                                    </div>
-                                    <div className="text-xs ml-6">
-                                        {canvasWidth} x {canvasHeight}px
-                                    </div>
+                                    <span className="text-xs font-medium">
+                                        {currentTemplate.name} ({currentTemplate.slots}张) · {canvasWidth} x {canvasHeight}
+                                    </span>
                                 </div>
                             </div>
                         )}
 
-                        {/* 画布比例 */}
-                        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800/20 shadow-sm p-4">
-                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                                画布比例
-                            </label>
-                            <div className="grid grid-cols-1 gap-2">
-                                {ASPECT_RATIOS.map(ratio => (
-                                    <button
-                                        key={ratio.id}
-                                        onClick={() => setAspectRatio(ratio)}
-                                        className={`flex items-center justify-between px-3 py-2 rounded-lg border-2 transition-all ${
-                                            aspectRatio.id === ratio.id
-                                                ? 'border-primary bg-primary/5 text-primary'
-                                                : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                                        }`}
-                                    >
-                                        <span className="font-medium text-sm">{ratio.name}</span>
-                                        <span className="text-xs opacity-70">
-                                            {ratio.id === 'square' && '1:1'}
-                                            {ratio.id === 'portrait' && '3:4'}
-                                            {ratio.id === 'post' && '4:3'}
-                                            {ratio.id === 'story' && '9:16'}
-                                            {ratio.id === 'wide' && '16:9'}
-                                        </span>
-                                    </button>
-                                ))}
+                        {/* 画布比例和图片适配 - 合并到一个卡片 */}
+                        {images.length > 0 && (
+                            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800/20 shadow-sm p-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    {/* 左侧：画布比例 */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                                            画布比例
+                                        </label>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {ASPECT_RATIOS.map(ratio => (
+                                                <button
+                                                    key={ratio.id}
+                                                    onClick={() => setAspectRatio(ratio)}
+                                                    className={`flex items-center justify-between px-3 py-2 rounded-lg border-2 transition-all ${
+                                                        aspectRatio.id === ratio.id
+                                                            ? 'border-primary bg-primary/5 text-primary'
+                                                            : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                                                    }`}
+                                                >
+                                                    <span className="font-medium text-sm">{ratio.name}</span>
+                                                    <span className="text-xs opacity-70">
+                                                        {ratio.id === 'square' && '1:1'}
+                                                        {ratio.id === 'portrait' && '3:4'}
+                                                        {ratio.id === 'post' && '4:3'}
+                                                        {ratio.id === 'story' && '9:16'}
+                                                        {ratio.id === 'wide' && '16:9'}
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* 右侧：图片适配 */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                                            图片适配
+                                        </label>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            <button
+                                                onClick={() => setFitMode('cover')}
+                                                className={`flex items-center justify-between px-3 py-2 rounded-lg border-2 transition-all ${
+                                                    fitMode === 'cover'
+                                                        ? 'border-primary bg-primary/5 text-primary'
+                                                        : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span className="material-symbols-outlined text-lg">crop_free</span>
+                                                    <span className="font-medium text-sm">填充</span>
+                                                </div>
+                                                <span className="text-xs opacity-70">裁剪</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setFitMode('contain')}
+                                                className={`flex items-center justify-between px-3 py-2 rounded-lg border-2 transition-all ${
+                                                    fitMode === 'contain'
+                                                        ? 'border-primary bg-primary/5 text-primary'
+                                                        : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span className="material-symbols-outlined text-lg">fit_screen</span>
+                                                    <span className="font-medium text-sm">适应</span>
+                                                </div>
+                                                <span className="text-xs opacity-70">完整</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setFitMode('fill')}
+                                                className={`flex items-center justify-between px-3 py-2 rounded-lg border-2 transition-all ${
+                                                    fitMode === 'fill'
+                                                        ? 'border-primary bg-primary/5 text-primary'
+                                                        : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span className="material-symbols-outlined text-lg">open_in_full</span>
+                                                    <span className="font-medium text-sm">拉伸</span>
+                                                </div>
+                                                <span className="text-xs opacity-70">变形</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* 布局方向 */}
                         {images.length >= 2 && images.length <= 3 && (
@@ -527,85 +581,28 @@ const PhotoCollageTool: React.FC = () => {
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                                     布局方向
                                 </label>
-                                <div className="grid grid-cols-1 gap-2">
+                                <div className="grid grid-cols-2 gap-2">
                                     <button
                                         onClick={() => setLayoutDirection('vertical')}
-                                        className={`flex items-center justify-between px-3 py-2 rounded-lg border-2 transition-all ${
+                                        className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border-2 transition-all ${
                                             layoutDirection === 'vertical'
                                                 ? 'border-primary bg-primary/5 text-primary'
                                                 : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                                         }`}
                                     >
-                                        <div className="flex items-center gap-2">
-                                            <span className="material-symbols-outlined text-lg">view_column</span>
-                                            <span className="font-medium text-sm">左右排列</span>
-                                        </div>
+                                        <span className="material-symbols-outlined text-lg">view_column</span>
+                                        <span className="font-medium text-sm">左右</span>
                                     </button>
                                     <button
                                         onClick={() => setLayoutDirection('horizontal')}
-                                        className={`flex items-center justify-between px-3 py-2 rounded-lg border-2 transition-all ${
+                                        className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg border-2 transition-all ${
                                             layoutDirection === 'horizontal'
                                                 ? 'border-primary bg-primary/5 text-primary'
                                                 : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                                         }`}
                                     >
-                                        <div className="flex items-center gap-2">
-                                            <span className="material-symbols-outlined text-lg">view_agenda</span>
-                                            <span className="font-medium text-sm">上下排列</span>
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* 图片适配方式 */}
-                        {images.length > 0 && (
-                            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800/20 shadow-sm p-4">
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                                    图片适配
-                                </label>
-                                <div className="grid grid-cols-1 gap-2">
-                                    <button
-                                        onClick={() => setFitMode('cover')}
-                                        className={`flex items-center justify-between px-3 py-2 rounded-lg border-2 transition-all ${
-                                            fitMode === 'cover'
-                                                ? 'border-primary bg-primary/5 text-primary'
-                                                : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                                        }`}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <span className="material-symbols-outlined text-lg">crop_free</span>
-                                            <span className="font-medium text-sm">填充</span>
-                                        </div>
-                                        <span className="text-xs opacity-70">裁剪填满</span>
-                                    </button>
-                                    <button
-                                        onClick={() => setFitMode('contain')}
-                                        className={`flex items-center justify-between px-3 py-2 rounded-lg border-2 transition-all ${
-                                            fitMode === 'contain'
-                                                ? 'border-primary bg-primary/5 text-primary'
-                                                : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                                        }`}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <span className="material-symbols-outlined text-lg">fit_screen</span>
-                                            <span className="font-medium text-sm">适应</span>
-                                        </div>
-                                        <span className="text-xs opacity-70">完整显示</span>
-                                    </button>
-                                    <button
-                                        onClick={() => setFitMode('fill')}
-                                        className={`flex items-center justify-between px-3 py-2 rounded-lg border-2 transition-all ${
-                                            fitMode === 'fill'
-                                                ? 'border-primary bg-primary/5 text-primary'
-                                                : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                                        }`}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <span className="material-symbols-outlined text-lg">open_in_full</span>
-                                            <span className="font-medium text-sm">拉伸</span>
-                                        </div>
-                                        <span className="text-xs opacity-70">可能变形</span>
+                                        <span className="material-symbols-outlined text-lg">view_agenda</span>
+                                        <span className="font-medium text-sm">上下</span>
                                     </button>
                                 </div>
                             </div>
@@ -663,6 +660,17 @@ const PhotoCollageTool: React.FC = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {/* 保存按钮 */}
+                        {previewUrl && (
+                            <button
+                                onClick={handleDownload}
+                                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold shadow hover:opacity-90 transition-opacity"
+                            >
+                                <span className="material-symbols-outlined text-xl">download</span>
+                                <span>保存图像</span>
+                            </button>
+                        )}
                     </div>
                 </div>
 
