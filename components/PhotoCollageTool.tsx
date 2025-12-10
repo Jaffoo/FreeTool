@@ -198,12 +198,14 @@ const PhotoCollageTool: React.FC = () => {
     const [images, setImages] = useState<UploadedImage[]>([]);
     const [layoutDirection, setLayoutDirection] = useState<LayoutDirection>('vertical');
     const [fitMode, setFitMode] = useState<FitMode>('cover');
-    const [aspectRatio, setAspectRatio] = useState<AspectRatio>(ASPECT_RATIOS[0]); // 默认正方形
+    const [aspectRatio, setAspectRatio] = useState<AspectRatio>(ASPECT_RATIOS[4]); // 默认宽屏
     const [canvasBaseSize, setCanvasBaseSize] = useState<number>(1200); // 基准尺寸
     const [spacing, setSpacing] = useState<number>(10);
     const [backgroundColor, setBackgroundColor] = useState<string>('#FFFFFF');
     const [isGenerating, setIsGenerating] = useState<boolean>(false);
     const [previewUrl, setPreviewUrl] = useState<string>('');
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+    const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -245,6 +247,40 @@ const PhotoCollageTool: React.FC = () => {
         setImages([]);
         setPreviewUrl('');
     }, [images]);
+
+    // 拖放处理函数
+    const handleDragStart = useCallback((index: number) => {
+        setDraggedIndex(index);
+    }, []);
+
+    const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+        e.preventDefault();
+        setDragOverIndex(index);
+    }, []);
+
+    const handleDragEnd = useCallback(() => {
+        if (draggedIndex === null || dragOverIndex === null || draggedIndex === dragOverIndex) {
+            setDraggedIndex(null);
+            setDragOverIndex(null);
+            return;
+        }
+
+        // 重新排序图片数组
+        setImages(prev => {
+            const newImages = [...prev];
+            const draggedImage = newImages[draggedIndex];
+            newImages.splice(draggedIndex, 1);
+            newImages.splice(dragOverIndex, 0, draggedImage);
+            return newImages;
+        });
+
+        setDraggedIndex(null);
+        setDragOverIndex(null);
+    }, [draggedIndex, dragOverIndex]);
+
+    const handleDragLeave = useCallback(() => {
+        setDragOverIndex(null);
+    }, []);
 
     const generateCollage = useCallback(async () => {
         if (images.length === 0 || !currentTemplate) return;
@@ -408,11 +444,25 @@ const PhotoCollageTool: React.FC = () => {
                                     </div>
                                 </div>
 
-                                {/* 图片缩略图列表 - 更小尺寸 */}
+                                {/* 图片缩略图列表 - 更小尺寸，支持拖放排序 */}
                                 {images.length > 0 && (
                                     <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2">
                                         {images.map((img, index) => (
-                                            <div key={index} className="relative group">
+                                            <div
+                                                key={index}
+                                                draggable
+                                                onDragStart={() => handleDragStart(index)}
+                                                onDragOver={(e) => handleDragOver(e, index)}
+                                                onDragEnd={handleDragEnd}
+                                                onDragLeave={handleDragLeave}
+                                                className={`relative group cursor-move ${
+                                                    draggedIndex === index ? 'opacity-50' : ''
+                                                } ${
+                                                    dragOverIndex === index && draggedIndex !== index
+                                                        ? 'ring-2 ring-primary ring-offset-2'
+                                                        : ''
+                                                }`}
+                                            >
                                                 <img
                                                     src={img.url}
                                                     alt={`图片 ${index + 1}`}
@@ -426,6 +476,11 @@ const PhotoCollageTool: React.FC = () => {
                                                 </button>
                                                 <div className="absolute bottom-0.5 left-0.5 bg-black/60 text-white text-xs px-1 py-0.5 rounded text-[10px]">
                                                     {index + 1}
+                                                </div>
+                                                <div className="absolute top-0.5 left-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <span className="material-symbols-outlined text-white text-sm drop-shadow-lg">
+                                                        drag_indicator
+                                                    </span>
                                                 </div>
                                             </div>
                                         ))}
