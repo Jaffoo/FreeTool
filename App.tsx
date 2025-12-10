@@ -3,6 +3,7 @@ import TranslateTool from './components/TranslateTool';
 import ImageConverterTool from './components/ImageConverterTool';
 import ImageEditorTool from './components/ImageEditorTool';
 import ImageComparisonTool from './components/ImageComparisonTool';
+import PhotoCollageTool from './components/PhotoCollageTool';
 import CodeHighlightTool from './components/CodeHighlightTool';
 import TextFormatterTool from './components/TextFormatterTool';
 import JsonFormatterTool from './components/JsonFormatterTool';
@@ -24,6 +25,7 @@ type ToolType =
     | 'image-converter'
     | 'image-editor'
     | 'image-comparison'
+    | 'photo-collage'
     | 'code-highlight'
     | 'text-formatter'
     | 'json-formatter'
@@ -94,6 +96,12 @@ const TOOLS: Tool[] = [
         name: '多图自由拼接',
         icon: 'layers',
         component: ImageComparisonTool,
+    },
+    {
+        id: 'photo-collage',
+        name: '模板快速拼接',
+        icon: 'grid_view',
+        component: PhotoCollageTool,
     },
     {
         id: 'table-converter',

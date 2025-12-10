@@ -5,11 +5,15 @@ type ToolType =
     | 'image-converter'
     | 'image-editor'
     | 'image-comparison'
+    | 'photo-collage'
     | 'code-highlight'
     | 'text-formatter'
     | 'json-formatter'
+    | 'xml-formatter'
     | 'math-formula'
-    | 'table-converter';
+    | 'table-converter'
+    | 'video-aspect-converter'
+    | 'text-diff';
 
 interface Tool {
     id: ToolType;
@@ -55,8 +59,13 @@ const TOOLS: Tool[] = [
     },
     {
         id: 'image-comparison',
-        name: '对比',
+        name: '拼接',
         icon: 'layers',
+    },
+    {
+        id: 'photo-collage',
+        name: '模板',
+        icon: 'grid_view',
     },
     {
         id: 'table-converter',
