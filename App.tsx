@@ -13,6 +13,7 @@ import TableConverter from './components/TableConverter';
 import VideoAspectConverter from './components/VideoAspectConverter';
 import TextDiffTool from './components/TextDiffTool';
 import PdfToPptTool from './components/PdfToPptTool';
+import PromptGeneratorTool from './components/PromptGeneratorTool';
 import BottomNavBar from './components/BottomNavBar';
 
 // 获取资源路径的辅助函数
@@ -35,7 +36,8 @@ type ToolType =
     | 'table-converter'
     | 'video-aspect-converter'
     | 'text-diff'
-    | 'pdf-to-ppt';
+    | 'pdf-to-ppt'
+    | 'prompt-generator';
 
 interface Tool {
     id: ToolType;
@@ -128,6 +130,12 @@ const TOOLS: Tool[] = [
         name: 'PDF转PPT',
         icon: 'slideshow',
         component: PdfToPptTool,
+    },
+    {
+        id: 'prompt-generator',
+        name: '提示词生成器',
+        icon: 'psychology',
+        component: PromptGeneratorTool,
     },
 ];
 
