@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { decompressFrames, parseGIF } from 'gifuct-js';
+import { loadGifJs } from '../utils/loadGifJs';
 
 // Declare GIF global
 declare global {
@@ -21,6 +22,13 @@ const ImageConverterTool: React.FC = () => {
     const [convertedSize, setConvertedSize] = useState<number>(0);
     const [originalSize, setOriginalSize] = useState<number>(0);
     const [gifQuality, setGifQuality] = useState<'lowest' | 'low' | 'medium' | 'high' | 'highest'>('medium'); // GIF 质量档位，默认平衡
+
+    // 按需加载 GIF.js
+    useEffect(() => {
+        loadGifJs().catch(err => {
+            console.error('GIF.js 加载失败:', err);
+        });
+    }, []);
 
     const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];

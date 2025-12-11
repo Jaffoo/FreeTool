@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { loadKatex } from '../utils/loadKatex';
 
 // Declare KaTeX global
 declare global {
@@ -238,6 +239,14 @@ const MathFormulaEditor: React.FC = () => {
             setRenderedHtml('');
             setMathmlOutput('');
         }
+    }, []);
+
+    // 按需加载 KaTeX
+    useEffect(() => {
+        loadKatex().catch(err => {
+            console.error('KaTeX 加载失败:', err);
+            setError('KaTeX 加载失败，请刷新页面重试');
+        });
     }, []);
 
     useEffect(() => {

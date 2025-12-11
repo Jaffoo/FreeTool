@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { loadDataGridXL } from '../utils/loadDataGridXL';
 
 declare global {
     interface Window {
@@ -74,6 +75,14 @@ const TableConverter: React.FC = () => {
     const gridContainerRef = useRef<HTMLDivElement>(null);
     const gridInstanceRef = useRef<DataGridXLInstance | null>(null);
     const latestDataRef = useRef<string[][]>(tableData);
+
+    // 按需加载 DataGridXL
+    useEffect(() => {
+        loadDataGridXL().catch(err => {
+            console.error('DataGridXL 加载失败:', err);
+            setGridStatus('error');
+        });
+    }, []);
 
     useEffect(() => {
         latestDataRef.current = tableData;
